@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {% load static %}
+    {% if not request.session.username %}
+        <script type="text/javascript">
+		function goIndex() {
+            alert("请先登录！");
+            setTimeout("javascript:location.href='{% url 'login:login' %}'", 0);
+        }
+		goIndex()
+        </script>
+    {% endif %}
+    <title>信息管理系统</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <script type="text/javascript" src="{% static 'scripts/jquery/jquery-1.7.1.js' %}"></script>
+    <link href="{% static 'style/authority/basic_layout.css' %}" rel="stylesheet" type="text/css">
+    <link href="{% static 'style/authority/common_style.css' %}" rel="stylesheet" type="text/css">
+    <script type="text/javascript" src="{% static 'scripts/authority/commonAll.js' %}"></script>
+    <script type="text/javascript" src="{% static 'scripts/jquery/jquery-1.4.4.min.js' %}"></script>
+    <script src="{% static 'scripts/My97DatePicker/WdatePicker.js' %}" type="text/javascript" defer="defer"></script>
+    <script type="text/javascript" src="{% static 'scripts/artDialog/artDialog.js' %}"></script>
+    <script type="text/javascript">
+        function cancel(){
+            setTimeout("javascript:location.href='{% url 'handlerfile:index' %}'", 0);
+		}
+    </script>
+</head>
+<body>
+
+	<div id="container">
+		<div id="nav_links">
+			当前位置：基础数据&nbsp;>&nbsp;<span style="color: #1A5CC6;">添加文件</span>
+			<div id="page_close">
+				<a href="javascript:parent.$.fancybox.close();">
+					<img src="{% static 'images/common/page_close.png' %}" width="20" height="20" style="vertical-align: text-top;"/>
+				</a>
+			</div>
+		</div>
+        <form id="submitForm" name="submitForm" action="{% url 'handlerfile:add' %}" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="ui_content">
+            <div id="box_top">上传文件</div>
+                <div><img src="{% static 'static/images/login/login2.png' %}"></div>
+            <div id="box_top"></div>
+                <table  cellspacing="0" cellpadding="0" width="100%" align="left" border="0">
+                    <tr>
+                        <td class="ui_text_rt"></td>
+                        <td class="ui_text_lt">
+                            请选择上传的文件：<input type="file" name="addfile" class="ui_input_btn01" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td class="ui_text_lt">
+                            <input type="submit" value="提交" class="ui_input_btn01"/>
+                            <input type="button" value="取消" class="ui_input_btn01" onclick="cancel();"/>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+	    </form>
+        {% if error_message %}
+            <p>{{ error_message }}</p>
+        {% endif %}
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {% load static %}
+    {% if not request.session.username %}
+        <script type="text/javascript">
+		function goIndex() {
+            alert("请先登录！");
+            setTimeout("javascript:location.href='{% url 'login:login' %}'", 0);
+        }
+		goIndex()
+        </script>
+    {% endif %}
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <script type="text/javascript" src="{% static 'scripts/jquery/jquery-1.7.1.js' %}"></script>
+    <link href="{% static 'style/authority/basic_layout.css' %}" rel="stylesheet" type="text/css">
+    <link href="{% static 'style/authority/common_style.css' %}" rel="stylesheet" type="text/css">
+    <script type="text/javascript" src="{% static 'scripts/authority/commonAll.js' %}"></script>
+    <script type="text/javascript" src="{% static 'scripts/fancybox/jquery.fancybox-1.3.4.js' %}"></script>
+    <script type="text/javascript" src="{% static 'scripts/fancybox/jquery.fancybox-1.3.4.pack.js' %}"></script>
+{#    <script type="text/javascript" src="{% static 'scripts/artDialog/artDialog.js?skin=default'%}"></script>#}
+    <script type="text/javascript" src="{% static 'scripts/artDialog/artDialog.js'%}"></script>
+    <title>信息管理系统</title>
+    <script type="text/javascript">
+        function goAdd(){
+            setTimeout("javascript:location.href='{% url 'handlerfile:addPage' %}'", 0);
+		}
+		/**
+         * @desc  纯JS前端分页方法
+         * @param  {Number} page 当前页码，默认1
+         * @param  {Number} pageSize 每页最多显示条数，默认10
+         * @param  {Array} totalData 总的数据集，默认为空数组
+         * @return {Object} {
+            data, //当前页展示数据，数组
+            page, //当前页码
+            pageSize, //每页最多显示条数
+            length, //总的数据条数
+          }
+        **/
+        const getTableData = (page = 1, pageSize = 10, totalData = []) => {
+          const { length } = totalData;
+          const tableData = {
+            data: [],
+            page,
+            pageSize,
+            length,
+          };
+          if (pageSize >= length) { //pageSize大于等于总数据长度，说明只有1页数据或没有数据
+            tableData.data = totalData;
+            tableData.page = 1;//直接取第一页
+          } else { //pageSize小于总数据长度，数据多余1页
+            const num = pageSize * (page - 1);//计算当前页（不含）之前的所有数据总条数
+            if (num < length) { //如果当前页之前所有数据总条数小于（不能等于）总的数据集长度，则说明当前页码没有超出最大页码
+              const startIndex = num;//当前页第一条数据在总数据集中的索引
+              const endIndex = num + pageSize - 1;//当前页最后一条数据索引
+              tableData.data = totalData.filter((_, index) => index >= startIndex && index <= endIndex);//当前页数据条数小于每页最大条数时，也按最大条数范围筛取数据
+            } else { //当前页码超出最大页码，则计算实际最后一页的page，自动返回最后一页数据
+              const size = parseInt(length / pageSize); //取商
+              const rest = length % pageSize; //取余数
+              if (rest > 0) { //余数大于0，说明实际最后一页数据不足pageSize，应该取size+1为最后一条的页码
+                tableData.page = size + 1;//当前页码重置，取size+1
+                tableData.data = totalData.filter((_, index) => index >= (pageSize * size) && index <= length);
+              } else if (rest === 0) { //余数等于0，最后一页数据条数正好是pageSize
+                tableData.page = size;//当前页码重置，取size
+                tableData.data = totalData.filter((_, index) => index >= (pageSize * (size - 1)) && index <= length);
+              } //注：余数不可能小于0
+            }
+          }
+          return tableData;
+        };
+    </script>
+    <style>
+        .alt td{ background:black !important;}
+    </style>
+</head>
+
+<body>
+	<form id="submitForm" name="submitForm" action="{% url 'handlerfile:search' %}" method="post">
+        {% csrf_token %}
+		<div id="container">
+			<div class="ui_content">
+				<div class="ui_text_indent">
+					<div id="box_border">
+						<div id="box_top">搜索</div>
+						<div id="box_center">
+							文件名：<input type="text" name="filename" class="ui_input_txt02" />
+						</div>
+                        <div id="box_bottom">
+							<input type="submit" value="查询" class="ui_input_btn01" name="select"/>
+                            <input type="button" value="新增" class="ui_input_btn01" id="addBtn" onclick="goAdd();"/>
+{#							<input type="button" value="导入" class="ui_input_btn01" id="importBtn" />#}
+{#							<input type="button" value="导出" class="ui_input_btn01" onclick="exportExcel();" />#}
+						</div>
+					</div>
+				</div>
+			</div>
+        </div>
+    </form>
+
+    <div class="ui_content">
+        <div class="ui_tb">
+
+            <table class="table" cellspacing="0" cellpadding="0" width="100%" align="center" border="0">
+                <tr>
+                    <th>文件名</th>
+                    <th>所属用户</th>
+                    <th>操作</th>
+                </tr>
+                {% if files %}
+                    {% for file in files %}
+                        <tr>
+                            <td>{{ file.filename }}</td>
+                            <td>{{ file.username }}</td>
+                            <td style="width: 20%">
+                                <form id="submitForm" name="submitForm" action="{% url 'handlerfile:download' %}" method="post">
+                                    {% csrf_token %}
+                                    <input type='hidden' name="filename" value="{{ file.filename }}">
+                                    <input type="submit" value="下载" class="ui_input_btn01"/>
+                                </form>
+                                 <form id="submitForm" name="submitForm" action="{% url 'handlerfile:delete' %}" method="post">
+                                    {% csrf_token %}
+                                    <input type='hidden' name="filename" value="{{ file.filename }}">
+                                    <input type="submit" value="删除" class="ui_input_btn01"/>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+
+            </table>
+        </div>
+{#        <div class="ui_tb_h30">#}
+{#            <script>#}
+{#            </script>#}
+{#            <div class="ui_flt" style="height: 30px; line-height: 30px;">#}
+{#                共有#}
+{#                <span class="ui_txt_bold04">{{ files.count }}</span>#}
+{#                条记录，当前第#}
+{#                <span class="ui_txt_bold04"><script>document.write(getTableData(1,10,{{ files }}).page);</script>#}
+{#                /#}
+{#                1</span>#}
+{#                页#}
+{#            </div>#}
+{#            <div class="ui_frt">#}
+{#                <!--    如果是第一页，则只显示下一页、尾页 -->#}
+{##}
+{#                    <input type="button" value="首页" class="ui_input_btn01" />#}
+{#                    <input type="button" value="上一页" class="ui_input_btn01" />#}
+{#                    <input type="button" value="下一页" class="ui_input_btn01"#}
+{#                        onclick="jumpNormalPage(2);" />#}
+{#                    <input type="button" value="尾页" class="ui_input_btn01"#}
+{#                        onclick="jumpNormalPage(9);" />#}
+{##}
+{##}
+{##}
+{#                <!--     如果是最后一页，则只显示首页、上一页 -->#}
+{##}
+{#                转到第<input type="text" id="jumpNumTxt" class="ui_input_txt01" />页#}
+{#                     <input type="button" class="ui_input_btn01" value="跳转" onclick="jumpInputPage(9);" />#}
+{#            </div>#}
+        </div>
+    {% endif %}
+    </div>
+
+{#<div style="display:none"><script src='http://v7.cnzz.com/stat.php?id=155540&web_id=155540' language='JavaScript' charset='gb2312'></script></div>#}
+</body>
+</html>
